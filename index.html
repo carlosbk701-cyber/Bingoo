@@ -291,8 +291,8 @@
                 return;
             }
             balance -= 10;
-            let players = Math.floor(Math.random() * 10) + 18; // ከ 18 እስከ 27 ተጫዋቾች
-            currentPrize = players * 9; // 90% ለድል የሚሆን
+            let players = 23;
+            currentPrize = 207; // 23 * 10 * 0.9 (90% prize pool)
             document.getElementById('player-count').innerText = players;
             document.getElementById('derash-val').innerText = currentPrize + ' Br';
             document.getElementById('balance').innerText = balance + ' Br';
@@ -338,9 +338,8 @@
                     cell.innerText = 'FREE';
                 } else {
                     cell.innerHTML = `<span>${getLetter(val)}</span>${val}`;
-                    let idx = i;
                     cell.onclick = () => {
-                        if(calledNumbers.includes(val) || val === 'FREE') {
+                        if(calledNumbers.includes(val)) {
                             cell.classList.toggle('marked');
                             checkWinningCondition();
                         } else {
