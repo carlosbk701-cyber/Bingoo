@@ -251,70 +251,18 @@
         let gameInterval = null;
         let currentPrize = 207;
 
-        // Web Audio Sound Effects Generator
-        let audioCtx = null;
-        function getAudioContext() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-            return audioCtx;
-        }
+        // Real Sound Effects using HTML5 Audio
+        const clickSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3');
+        const callSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3');
+        const winSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2702/2702-preview.mp3');
+        const errorSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3');
 
-        function playSound(type) {
+        function playSound(audioObj) {
             try {
-                let ctx = getAudioContext();
-                let osc = ctx.createOscillator();
-                let gain = ctx.createGain();
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-
-                let now = ctx.currentTime;
-
-                if (type === 'click') {
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(400, now);
-                    osc.frequency.exponentialRampToValueAtTime(800, now + 0.08);
-                    gain.gain.setValueAtTime(0.15, now);
-                    gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
-                    osc.start(now);
-                    osc.stop(now + 0.08);
-                } else if (type === 'call') {
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(587.33, now); // D5
-                    osc.frequency.setValueAtTime(880, now + 0.1); // A5
-                    gain.gain.setValueAtTime(0.2, now);
-                    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
-                    osc.start(now);
-                    osc.stop(now + 0.25);
-                } else if (type === 'win') {
-                    // Win fanfare melody
-                    let notes = [523.25, 659.25, 783.99, 1046.50];
-                    notes.forEach((freq, index) => {
-                        let o = ctx.createOscillator();
-                        let g = ctx.createGain();
-                        o.connect(g);
-                        g.connect(ctx.destination);
-                        o.type = 'square';
-                        o.frequency.setValueAtTime(freq, now + index * 0.12);
-                        g.gain.setValueAtTime(0.2, now + index * 0.12);
-                        g.gain.linearRampToValueAtTime(0.01, now + index * 0.12 + 0.2);
-                        o.start(now + index * 0.12);
-                        o.stop(now + index * 0.12 + 0.2);
-                    });
-                } else if (type === 'error') {
-                    osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(150, now);
-                    osc.frequency.setValueAtTime(100, now + 0.1);
-                    gain.gain.setValueAtTime(0.2, now);
-                    gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
-                    osc.start(now);
-                    osc.stop(now + 0.2);
-                }
-            } catch(e) {
-                console.log(e);
+                audioObj.currentTime = 0;
+                audioObj.play().catch(e => console.log("Audio play blocked:", e));
+            } catch(err) {
+                console.log(err);
             }
         }
 
@@ -328,7 +276,7 @@
                 item.onclick = () => {
                     selectedCartela = i;
                     document.getElementById('active-card-num').innerText = i;
-                    playSound('click');
+                    playSound(clickSound);
                     initCartelas();
                 };
                 grid.appendChild(item);
@@ -347,10 +295,10 @@
         function startGame() {
             if (balance < 10) {
                 alert('ቀሪ ሒሳብዎ በቂ አይደለም!');
-                playSound('error');
+                playSound(errorSound);
                 return;
             }
-            playSound('click');
+            playSound(clickSound);
             balance -= 10;
             let players = 23;
             currentPrize = 207; 
@@ -402,10 +350,10 @@
                     cell.onclick = () => {
                         if(calledNumbers.includes(val)) {
                             cell.classList.toggle('marked');
-                            playSound('click');
+                            playSound(clickSound);
                             checkWinningCondition();
                         } else {
-                            playSound('error');
+                            playSound(errorSound);
                             tg.HapticFeedback.notificationOccurred('error');
                         }
                     };
@@ -426,7 +374,7 @@
             document.getElementById('current-called-box').innerText = `${lettr}-${nextNum}`;
             document.getElementById('called-count-text').innerText = `Called: ${calledNumbers.length}/75`;
             
-            playSound('call');
+            playSound(callSound);
             tg.HapticFeedback.impactOccurred('light');
         }
 
@@ -470,7 +418,7 @@
 
         function declareBingo() {
             clearInterval(gameInterval);
-            playSound('win');
+            playSound(winSound);
             document.getElementById('game-view').style.display = 'none';
             document.getElementById('win-view').style.display = 'flex';
             document.getElementById('winner-text').innerText = `Card #${selectedCartela} won this game.`;
@@ -482,7 +430,7 @@
 
         function goHome() {
             if (gameInterval) clearInterval(gameInterval);
-            playSound('click');
+            playSound(clickSound);
             document.getElementById('game-view').style.display = 'none';
             document.getElementById('win-view').style.display = 'none';
             document.getElementById('select-view').style.display = 'flex';
