@@ -163,15 +163,6 @@
             font-size: 12px;
             cursor: default;
         }
-        .called-display {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #020617;
-            padding: 10px 14px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-        }
         .big-called {
             background: linear-gradient(135deg, #fbbf24, #d97706);
             color: #000;
@@ -260,6 +251,73 @@
         let gameInterval = null;
         let currentPrize = 207;
 
+        // Web Audio Sound Effects Generator
+        let audioCtx = null;
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function playSound(type) {
+            try {
+                let ctx = getAudioContext();
+                let osc = ctx.createOscillator();
+                let gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                let now = ctx.currentTime;
+
+                if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.exponentialRampToValueAtTime(800, now + 0.08);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                } else if (type === 'call') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(587.33, now); // D5
+                    osc.frequency.setValueAtTime(880, now + 0.1); // A5
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'win') {
+                    // Win fanfare melody
+                    let notes = [523.25, 659.25, 783.99, 1046.50];
+                    notes.forEach((freq, index) => {
+                        let o = ctx.createOscillator();
+                        let g = ctx.createGain();
+                        o.connect(g);
+                        g.connect(ctx.destination);
+                        o.type = 'square';
+                        o.frequency.setValueAtTime(freq, now + index * 0.12);
+                        g.gain.setValueAtTime(0.2, now + index * 0.12);
+                        g.gain.linearRampToValueAtTime(0.01, now + index * 0.12 + 0.2);
+                        o.start(now + index * 0.12);
+                        o.stop(now + index * 0.12 + 0.2);
+                    });
+                } else if (type === 'error') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.setValueAtTime(100, now + 0.1);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                }
+            } catch(e) {
+                console.log(e);
+            }
+        }
+
         function initCartelas() {
             const grid = document.getElementById('cartela-grid');
             grid.innerHTML = '';
@@ -270,6 +328,7 @@
                 item.onclick = () => {
                     selectedCartela = i;
                     document.getElementById('active-card-num').innerText = i;
+                    playSound('click');
                     initCartelas();
                 };
                 grid.appendChild(item);
@@ -288,11 +347,13 @@
         function startGame() {
             if (balance < 10) {
                 alert('ቀሪ ሒሳብዎ በቂ አይደለም!');
+                playSound('error');
                 return;
             }
+            playSound('click');
             balance -= 10;
             let players = 23;
-            currentPrize = 207; // 23 * 10 * 0.9 (90% prize pool)
+            currentPrize = 207; 
             document.getElementById('player-count').innerText = players;
             document.getElementById('derash-val').innerText = currentPrize + ' Br';
             document.getElementById('balance').innerText = balance + ' Br';
@@ -341,8 +402,10 @@
                     cell.onclick = () => {
                         if(calledNumbers.includes(val)) {
                             cell.classList.toggle('marked');
+                            playSound('click');
                             checkWinningCondition();
                         } else {
+                            playSound('error');
                             tg.HapticFeedback.notificationOccurred('error');
                         }
                     };
@@ -362,6 +425,8 @@
             let lettr = getLetter(nextNum);
             document.getElementById('current-called-box').innerText = `${lettr}-${nextNum}`;
             document.getElementById('called-count-text').innerText = `Called: ${calledNumbers.length}/75`;
+            
+            playSound('call');
             tg.HapticFeedback.impactOccurred('light');
         }
 
@@ -374,21 +439,21 @@
 
             let hasWon = false;
 
-            // 1. Horizontal Check (አግድም መስመር - 5 ረድፎች)
+            // 1. Horizontal Check (አግድም መስመር)
             for (let r = 0; r < 5; r++) {
                 if (gridValues[r*5] && gridValues[r*5+1] && gridValues[r*5+2] && gridValues[r*5+3] && gridValues[r*5+4]) {
                     hasWon = true;
                 }
             }
 
-            // 2. Vertical Check (ቁመት መስመር - 5 አምዶች)
+            // 2. Vertical Check (ቁመት መስመር)
             for (let c = 0; c < 5; c++) {
                 if (gridValues[c] && gridValues[c+5] && gridValues[c+10] && gridValues[c+15] && gridValues[c+20]) {
                     hasWon = true;
                 }
             }
 
-            // 3. Diagonal Check (ሰያፍ መስመር - 2 ሰያፎች)
+            // 3. Diagonal Check (ሰያፍ መስመር)
             if (gridValues[0] && gridValues[6] && gridValues[12] && gridValues[18] && gridValues[24]) {
                 hasWon = true;
             }
@@ -405,6 +470,7 @@
 
         function declareBingo() {
             clearInterval(gameInterval);
+            playSound('win');
             document.getElementById('game-view').style.display = 'none';
             document.getElementById('win-view').style.display = 'flex';
             document.getElementById('winner-text').innerText = `Card #${selectedCartela} won this game.`;
@@ -416,6 +482,7 @@
 
         function goHome() {
             if (gameInterval) clearInterval(gameInterval);
+            playSound('click');
             document.getElementById('game-view').style.display = 'none';
             document.getElementById('win-view').style.display = 'none';
             document.getElementById('select-view').style.display = 'flex';
