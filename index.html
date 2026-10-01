@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Feta Bingo</title>
+    <title>Carl Bingo</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -142,6 +142,7 @@
             font-weight: bold;
             border-radius: 4px;
             border: 1px solid #334155;
+            cursor: pointer;
         }
         .cell span {
             font-size: 8px;
@@ -160,6 +161,7 @@
             background: #0284c7 !important;
             color: #fff;
             font-size: 12px;
+            cursor: default;
         }
         .called-display {
             display: flex;
@@ -187,7 +189,7 @@
         <!-- Top Navigation -->
         <div class="top-nav">
             <button class="nav-btn" onclick="goHome()">← Back</button>
-            <span style="font-weight: bold; font-size: 15px;">Feta Bingo 🎱</span>
+            <span style="font-weight: bold; font-size: 15px;">Carl Bingo 🎱</span>
         </div>
 
         <!-- Stats Bar -->
@@ -206,7 +208,7 @@
             </div>
             <div class="stat-box">
                 <div class="stat-title">Derash</div>
-                <div class="stat-value" id="derash-val">184 Br</div>
+                <div class="stat-value" id="derash-val">207 Br</div>
             </div>
         </div>
 
@@ -231,13 +233,7 @@
             </div>
 
             <!-- Card Grid -->
-            <div class="game-board-grid" id="game-board">
-                <div class="cell header-cell">B</div>
-                <div class="cell header-cell">I</div>
-                <div class="cell header-cell">N</div>
-                <div class="cell header-cell">G</div>
-                <div class="cell header-cell">O</div>
-            </div>
+            <div class="game-board-grid" id="game-board"></div>
 
             <button class="btn" id="bingo-btn" style="background: #22c55e; color: #fff; display: none;" onclick="declareBingo()">🎉 BINGOO አውጅ!</button>
         </div>
@@ -262,6 +258,7 @@
         let calledNumbers = [];
         let playerCardNumbers = [];
         let gameInterval = null;
+        let currentPrize = 207;
 
         function initCartelas() {
             const grid = document.getElementById('cartela-grid');
@@ -294,6 +291,10 @@
                 return;
             }
             balance -= 10;
+            let players = Math.floor(Math.random() * 10) + 18; // ከ 18 እስከ 27 ተጫዋቾች
+            currentPrize = players * 9; // 90% ለድል የሚሆን
+            document.getElementById('player-count').innerText = players;
+            document.getElementById('derash-val').innerText = currentPrize + ' Br';
             document.getElementById('balance').innerText = balance + ' Br';
 
             document.getElementById('select-view').style.display = 'none';
@@ -339,9 +340,9 @@
                     cell.innerHTML = `<span>${getLetter(val)}</span>${val}`;
                     let idx = i;
                     cell.onclick = () => {
-                        if(calledNumbers.includes(val)) {
+                        if(calledNumbers.includes(val) || val === 'FREE') {
                             cell.classList.toggle('marked');
-                            checkWin();
+                            checkWinningCondition();
                         } else {
                             tg.HapticFeedback.notificationOccurred('error');
                         }
@@ -365,12 +366,41 @@
             tg.HapticFeedback.impactOccurred('light');
         }
 
-        function checkWin() {
+        function checkWinningCondition() {
             const cells = document.querySelectorAll('#game-board .cell:not(.header-cell)');
-            let marked = 0;
-            cells.forEach(c => { if(c.classList.contains('marked')) marked++; });
-            if(marked >= 5) {
+            let gridValues = [];
+            cells.forEach(c => {
+                gridValues.push(c.classList.contains('marked'));
+            });
+
+            let hasWon = false;
+
+            // 1. Horizontal Check (አግድም መስመር - 5 ረድፎች)
+            for (let r = 0; r < 5; r++) {
+                if (gridValues[r*5] && gridValues[r*5+1] && gridValues[r*5+2] && gridValues[r*5+3] && gridValues[r*5+4]) {
+                    hasWon = true;
+                }
+            }
+
+            // 2. Vertical Check (ቁመት መስመር - 5 አምዶች)
+            for (let c = 0; c < 5; c++) {
+                if (gridValues[c] && gridValues[c+5] && gridValues[c+10] && gridValues[c+15] && gridValues[c+20]) {
+                    hasWon = true;
+                }
+            }
+
+            // 3. Diagonal Check (ሰያፍ መስመር - 2 ሰያፎች)
+            if (gridValues[0] && gridValues[6] && gridValues[12] && gridValues[18] && gridValues[24]) {
+                hasWon = true;
+            }
+            if (gridValues[4] && gridValues[8] && gridValues[12] && gridValues[16] && gridValues[20]) {
+                hasWon = true;
+            }
+
+            if (hasWon) {
                 document.getElementById('bingo-btn').style.display = 'block';
+            } else {
+                document.getElementById('bingo-btn').style.display = 'none';
             }
         }
 
@@ -379,8 +409,8 @@
             document.getElementById('game-view').style.display = 'none';
             document.getElementById('win-view').style.display = 'flex';
             document.getElementById('winner-text').innerText = `Card #${selectedCartela} won this game.`;
-            document.getElementById('win-amount').innerText = `192 Br`;
-            balance += 192;
+            document.getElementById('win-amount').innerText = `${currentPrize} Br`;
+            balance += currentPrize;
             document.getElementById('balance').innerText = balance + ' Br';
             tg.HapticFeedback.notificationOccurred('success');
         }
