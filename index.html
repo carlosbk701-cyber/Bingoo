@@ -251,17 +251,24 @@
         let gameInterval = null;
         let currentPrize = 207;
 
-        // Text-to-Speech Number Caller Function
+        // Text-to-Speech Direct Caller (e.g., "B1", "I22")
         function speakNumber(textToSay) {
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel(); // ንግግሩ እንዳይደራረብ
                 let utterance = new SpeechSynthesisUtterance(textToSay);
-                utterance.rate = 1.0; // የንግግር ፍጥነት
-                utterance.pitch = 1.0; // የድምፅ ከፍታ
-                utterance.lang = 'en-US'; // በእንግሊዝኛ እንዲጠራው (ለምሳሌ B 12)
+                utterance.rate = 0.9; // ፍጥነቱ ግልጽ እንዲሆን በትንሹ ተስተካክሏል
+                utterance.pitch = 1.0; 
+                utterance.lang = 'en-US'; 
                 window.speechSynthesis.speak(utterance);
             }
         }
+
+        // ስልኮች ድምፅን እንዳያግዱ (Audio Unlock) የመጀመሪያው ክሊክ ላይ ድምፅ እንዲነቃ ማድረግ
+        document.addEventListener('click', function() {
+            if ('speechSynthesis' in window && window.speechSynthesis.paused) {
+                window.speechSynthesis.resume();
+            }
+        }, { once: true });
 
         function initCartelas() {
             const grid = document.getElementById('cartela-grid');
@@ -308,7 +315,7 @@
             generateCardBoard();
 
             if (gameInterval) clearInterval(gameInterval);
-            gameInterval = setInterval(callNext, 3500); // በየ 3.5 ሰከንድ ቁጥር ይጠራል
+            gameInterval = setInterval(callNext, 4000); // በየ 4 ሰከንዱ ቁጥር ይጠራል
         }
 
         function generateCardBoard() {
@@ -363,12 +370,12 @@
             calledNumbers.push(nextNum);
 
             let lettr = getLetter(nextNum);
-            let callText = `${lettr}, ${nextNum}`; // በድምፅ እንዲጠራው (ለምሳሌ B, 9)
+            let callText = lettr + nextNum; // እንደ "B1", "I22" ሆኖ እንዲጠራው
             
             document.getElementById('current-called-box').innerText = `${lettr}-${nextNum}`;
             document.getElementById('called-count-text').innerText = `Called: ${calledNumbers.length}/75`;
             
-            // 🗣 ቁጥሩን በድምፅ መጥራት
+            // 🗣 ቁጥሩን ልክ እንደ B1 በድምፅ መጥራት
             speakNumber(callText);
             tg.HapticFeedback.impactOccurred('light');
         }
@@ -413,7 +420,7 @@
 
         function declareBingo() {
             clearInterval(gameInterval);
-            speakNumber("Bingo! You won the game!");
+            speakNumber("Bingo!");
             document.getElementById('game-view').style.display = 'none';
             document.getElementById('win-view').style.display = 'flex';
             document.getElementById('winner-text').innerText = `Card #${selectedCartela} won this game.`;
