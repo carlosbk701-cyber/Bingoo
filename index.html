@@ -3,51 +3,323 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bingoo Mini App</title>
+    <title>Bingoo Cash Games</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body {
-            background-color: #0f172a;
-            color: #ffffff;
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 20px;
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent-color: #6366f1;
+            --accent-hover: #4f46e5;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --success-color: #22c55e;
+            --danger-color: #ef4444;
+        }
+        * {
+            box-sizing: border-box;
             margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
         }
         .container {
+            width: 100%;
             max-width: 400px;
-            margin: auto;
-            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        header h1 {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+        header p {
+            color: var(--text-muted);
+            font-size: 14px;
         }
         .balance-card {
-            background-color: #1e293b;
-            padding: 15px;
+            background-color: var(--card-bg);
+            padding: 16px;
             border-radius: 12px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .balance-title {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .balance-amount {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--success-color);
+            margin-top: 4px;
+        }
+        .card-selector {
+            background-color: var(--card-bg);
+            padding: 16px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
         .btn {
-            background-color: #6366f1;
+            background-color: var(--accent-color);
             color: white;
             border: none;
-            padding: 12px 24px;
-            font-size: 16px;
+            padding: 12px 20px;
             border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
+            transition: background 0.2s;
             width: 100%;
-            margin-top: 10px;
+            text-align: center;
+        }
+        .btn:hover {
+            background-color: var(--accent-hover);
+        }
+        .btn:active {
+            transform: scale(0.98);
+        }
+        .bingo-section {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            background-color: var(--card-bg);
+            padding: 16px;
+            border-radius: 12px;
+        }
+        .called-number-display {
+            text-align: center;
+            background: #0f172a;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .called-num {
+            color: #38bdf8;
+            font-size: 24px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+        }
+        .cell {
+            aspect-ratio: 1;
+            background-color: #334155;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .cell.marked {
+            background-color: var(--success-color);
+            color: white;
+            text-decoration: line-through;
+        }
+        .cell.free {
+            background-color: #475569;
+            font-size: 11px;
+        }
+        .header-cell {
+            background-color: var(--accent-color) !important;
+            font-size: 16px;
+            cursor: default;
+        }
+        .status-msg {
+            text-align: center;
+            font-size: 14px;
+            color: var(--text-muted);
+            min-height: 20px;
         }
     </style>
 </head>
 <body>
+
     <div class="container">
-        <h1>🎮 Bingoo Cash Games</h1>
-        <p>እንኳን ወደ Bingoo በደህና መጡ!</p>
+        <header>
+            <h1>🎮 Bingoo Cash Games</h1>
+            <p>እንኳን ወደ Bingoo በደህና መጡ!</p>
+        </header>
+
         <div class="balance-card">
-            <h3>ቀሪ ሂሳብ (Balance)</h3>
-            <p style="font-size: 24px; font-weight: bold; color: #4ade80;">0.00 ETB</p>
+            <div class="balance-title">ቀሪ ሒሳብ (Balance)</div>
+            <div class="balance-amount" id="balance">100.00 ETB</div>
         </div>
-        <button class="btn" onclick="alert('ጨዋታው በቅርቡ ይጀመራል!')">ጨዋታ ጀምር 🎲</button>
+
+        <div id="home-view" class="card-selector">
+            <p style="text-align: center; font-size: 14px; color: var(--text-muted);">የዕድል ጨዋታዎን ጀምረው ሽልማቶችን ያግኙ!</p>
+            <button class="btn" onclick="startNewGame()">🎲 ጨዋታ ጀምር</button>
+        </div>
+
+        <div id="game-view" class="bingo-section">
+            <div class="called-number-display">
+                የወጣ ቁጥር: <span id="current-called" class="called-num">-</span>
+            </div>
+            
+            <div class="status-msg" id="game-status">ቁጥሮች እየተጠሩ ነው...</div>
+
+            <div class="grid" id="bingo-grid">
+                <div class="cell header-cell">B</div>
+                <div class="cell header-cell">I</div>
+                <div class="cell header-cell">N</div>
+                <div class="cell header-cell">G</div>
+                <div class="cell header-cell">O</div>
+            </div>
+
+            <button class="btn" id="bingo-btn" onclick="checkBingo()" style="background-color: var(--success-color); display: none;">🎉 BINGOO አውጅ!</button>
+            <button class="btn" onclick="endGame()" style="background-color: var(--danger-color); margin-top: 4px;">ተው (Quit)</button>
+        </div>
     </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+
+        let userBalance = 100.00;
+        let calledNumbers = [];
+        let playerCard = [];
+        let gameInterval = null;
+
+        function updateBalance(amount) {
+            userBalance += amount;
+            document.getElementById('balance').innerText = userBalance.toFixed(2) + " ETB";
+        }
+
+        function startNewGame() {
+            if (userBalance < 10) {
+                alert('ቀሪ ሒሳብዎ በቂ አይደለም! (ቢያንስ 10 ETB ያስፈልጋል።)');
+                return;
+            }
+            updateBalance(-10);
+
+            document.getElementById('home-view').style.display = 'none';
+            document.getElementById('game-view').style.display = 'flex';
+            document.getElementById('bingo-btn').style.display = 'none';
+            
+            calledNumbers = [];
+            generateCard();
+            
+            document.getElementById('game-status').innerText = 'ጨዋታው ተጀምሯል! ቁጥሮች እየወጡ ነው...';
+            
+            if (gameInterval) clearInterval(gameInterval);
+            gameInterval = setInterval(callNextNumber, 3000);
+        }
+
+        function generateCard() {
+            const grid = document.getElementById('bingo-grid');
+            grid.innerHTML = `
+                <div class="cell header-cell">B</div>
+                <div class="cell header-cell">I</div>
+                <div class="cell header-cell">N</div>
+                <div class="cell header-cell">G</div>
+                <div class="cell header-cell">O</div>
+            `;
+
+            playerCard = [];
+            for (let col = 0; col < 5; col++) {
+                let colNums = [];
+                let min = col * 15 + 1;
+                let max = min + 15;
+                while(colNums.length < 5) {
+                    let rand = Math.floor(Math.random() * (max - min)) + min;
+                    if(!colNums.includes(rand)) colNums.push(rand);
+                }
+                for (let row = 0; row < 5; row++) {
+                    playerCard.push(colNums[row]);
+                }
+            }
+
+            playerCard[12] = 'FREE';
+
+            for (let i = 0; i < 25; i++) {
+                let cell = document.createElement('div');
+                cell.className = 'cell';
+                if (playerCard[i] === 'FREE') {
+                    cell.classList.add('free', 'marked');
+                    cell.innerText = 'FREE';
+                } else {
+                    cell.innerText = playerCard[i];
+                    let index = i;
+                    cell.onclick = function() {
+                        toggleMark(index, cell);
+                    };
+                }
+                grid.appendChild(cell);
+            }
+        }
+
+        function toggleMark(index, cellElement) {
+            let num = playerCard[index];
+            if (calledNumbers.includes(num) || num === 'FREE') {
+                cellElement.classList.toggle('marked');
+                checkWinCondition();
+            } else {
+                tg.HapticFeedback.notificationOccurred('error');
+            }
+        }
+
+        function callNextNumber() {
+            let available = [];
+            for (let i = 1; i <= 75; i++) {
+                if (!calledNumbers.includes(i)) available.push(i);
+            }
+            if (available.length === 0) {
+                clearInterval(gameInterval);
+                return;
+            }
+            let nextNum = available[Math.floor(Math.random() * available.length)];
+            calledNumbers.push(nextNum);
+            document.getElementById('current-called').innerText = nextNum;
+            tg.HapticFeedback.impactOccurred('light');
+        }
+
+        function checkWinCondition() {
+            const cells = document.querySelectorAll('.cell');
+            let markedCount = 0;
+            cells.forEach(c => {
+                if(c.classList.contains('marked')) markedCount++;
+            });
+            if (markedCount >= 5) {
+                document.getElementById('bingo-btn').style.display = 'block';
+            }
+        }
+
+        function checkBingo() {
+            clearInterval(gameInterval);
+            tg.HapticFeedback.notificationOccurred('success');
+            alert('🎉 እንኳን አደረሰዎት! BINGO አሸንፈዋል! 50 ETB ተሸልመዋል!');
+            updateBalance(50.00);
+            endGame();
+        }
+
+        function endGame() {
+            if (gameInterval) clearInterval(gameInterval);
+            document.getElementById('game-view').style.display = 'none';
+            document.getElementById('home-view').style.display = 'flex';
+        }
+    </script>
 </body>
 </html>
