@@ -125,19 +125,27 @@
             aspect-ratio: 1;
             background-color: #334155;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            font-size: 14px;
+            font-size: 13px;
             border-radius: 6px;
             cursor: pointer;
             user-select: none;
             transition: background 0.2s, transform 0.1s;
         }
+        .cell span.num-label {
+            font-size: 10px;
+            color: #94a3b8;
+        }
         .cell.marked {
             background-color: var(--success-color);
             color: white;
             text-decoration: line-through;
+        }
+        .cell.marked span.num-label {
+            color: #dcfce7;
         }
         .cell.free {
             background-color: #475569;
@@ -147,6 +155,7 @@
             background-color: var(--accent-color) !important;
             font-size: 16px;
             cursor: default;
+            flex-direction: row;
         }
         .status-msg {
             text-align: center;
@@ -208,6 +217,15 @@
             document.getElementById('balance').innerText = userBalance.toFixed(2) + " ETB";
         }
 
+        function getLetterForNumber(num) {
+            if (num >= 1 && num <= 15) return 'B';
+            if (num >= 16 && num <= 30) return 'I';
+            if (num >= 31 && num <= 45) return 'N';
+            if (num >= 46 && num <= 60) return 'G';
+            if (num >= 61 && num <= 75) return 'O';
+            return '';
+        }
+
         function startNewGame() {
             if (userBalance < 10) {
                 alert('ቀሪ ሒሳብዎ በቂ አይደለም! (ቢያንስ 10 ETB ያስፈልጋል።)');
@@ -259,9 +277,11 @@
                 cell.className = 'cell';
                 if (playerCard[i] === 'FREE') {
                     cell.classList.add('free', 'marked');
-                    cell.innerText = 'FREE';
+                    cell.innerHTML = 'FREE';
                 } else {
-                    cell.innerText = playerCard[i];
+                    let num = playerCard[i];
+                    let letter = getLetterForNumber(num);
+                    cell.innerHTML = `<span>${letter}</span>${num}`;
                     let index = i;
                     cell.onclick = function() {
                         toggleMark(index, cell);
@@ -292,14 +312,16 @@
             }
             let nextNum = available[Math.floor(Math.random() * available.length)];
             calledNumbers.push(nextNum);
-            document.getElementById('current-called').innerText = nextNum;
+            
+            let letter = getLetterForNumber(nextNum);
+            document.getElementById('current-called').innerText = `${letter}-${nextNum}`;
             tg.HapticFeedback.impactOccurred('light');
         }
 
         function checkWinCondition() {
             const cells = document.querySelectorAll('.cell');
             let markedCount = 0;
-            cells.forEach(c => {
+            cells.items ? cells.items() : cells.forEach(c => {
                 if(c.classList.contains('marked')) markedCount++;
             });
             if (markedCount >= 5) {
