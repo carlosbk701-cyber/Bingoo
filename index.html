@@ -56,6 +56,9 @@
             border-radius: 12px;
             text-align: center;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
         .balance-title {
             font-size: 13px;
@@ -67,7 +70,6 @@
             font-size: 28px;
             font-weight: bold;
             color: var(--success-color);
-            margin-top: 4px;
         }
         .card-selector {
             background-color: var(--card-bg);
@@ -95,6 +97,12 @@
         }
         .btn:active {
             transform: scale(0.98);
+        }
+        .btn-deposit {
+            background-color: #0ea5e9;
+        }
+        .btn-deposit:hover {
+            background-color: #0284c7;
         }
         .bingo-section {
             display: none;
@@ -129,15 +137,16 @@
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            font-size: 13px;
+            font-size: 14px;
             border-radius: 6px;
             cursor: pointer;
             user-select: none;
             transition: background 0.2s, transform 0.1s;
         }
         .cell span.num-label {
-            font-size: 10px;
+            font-size: 9px;
             color: #94a3b8;
+            font-weight: normal;
         }
         .cell.marked {
             background-color: var(--success-color);
@@ -153,7 +162,7 @@
         }
         .header-cell {
             background-color: var(--accent-color) !important;
-            font-size: 16px;
+            font-size: 15px;
             cursor: default;
             flex-direction: row;
         }
@@ -176,11 +185,12 @@
         <div class="balance-card">
             <div class="balance-title">ቀሪ ሒሳብ (Balance)</div>
             <div class="balance-amount" id="balance">100.00 ETB</div>
+            <button class="btn btn-deposit" onclick="openDeposit()">💳 ካርቴላ (Deposit)</button>
         </div>
 
         <div id="home-view" class="card-selector">
             <p style="text-align: center; font-size: 14px; color: var(--text-muted);">የዕድል ጨዋታዎን ጀምረው ሽልማቶችን ያግኙ!</p>
-            <button class="btn" onclick="startNewGame()">🎲 ጨዋታ ጀምር</button>
+            <button class="btn" onclick="startNewGame()">🎲 ጨዋታ ጀምር (10 ETB)</button>
         </div>
 
         <div id="game-view" class="bingo-section">
@@ -226,9 +236,23 @@
             return '';
         }
 
+        function openDeposit() {
+            let amountStr = prompt("ማስገባት የሚፈልጉትን የብር መጠን ያስገቡ (ETB):", "50");
+            if (amountStr) {
+                let amount = parseFloat(amountStr);
+                if (!isNaN(amount) && amount > 0) {
+                    updateBalance(amount);
+                    tg.HapticFeedback.notificationOccurred('success');
+                    alert(`💳 በအောင်မြင်ት ${amount} ETB አካውንትዎ ላይ ተጭኗል!`);
+                } else {
+                    alert('እባክዎ ትክክለኛ ቁጥር ያስገቡ!');
+                }
+            }
+        }
+
         function startNewGame() {
             if (userBalance < 10) {
-                alert('ቀሪ ሒሳብዎ በቂ አይደለም! (ቢያንስ 10 ETB ያስፈልጋል።)');
+                alert('ቀሪ ሒሳብዎ በቂ አይደለም! (ቢያንስ 10 ETB ያስፈልጋል። የካርቴላ ቁልፍ በመጫን ሒሳብ ይሙሉ)');
                 return;
             }
             updateBalance(-10);
@@ -281,7 +305,7 @@
                 } else {
                     let num = playerCard[i];
                     let letter = getLetterForNumber(num);
-                    cell.innerHTML = `<span>${letter}</span>${num}`;
+                    cell.innerHTML = `<span class="num-label">${letter}</span>${num}`;
                     let index = i;
                     cell.onclick = function() {
                         toggleMark(index, cell);
@@ -321,7 +345,7 @@
         function checkWinCondition() {
             const cells = document.querySelectorAll('.cell');
             let markedCount = 0;
-            cells.items ? cells.items() : cells.forEach(c => {
+            cells.forEach(c => {
                 if(c.classList.contains('marked')) markedCount++;
             });
             if (markedCount >= 5) {
